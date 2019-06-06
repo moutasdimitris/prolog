@@ -82,7 +82,7 @@ session('RuleML-2010 Challenge',
 
 query(ListOfKeywords):-
     prepare(L),session(_,Y),
-    check(L,Y,ListOfKeywords).
+    check(L,Y,ListOfKeywords,Score_List),printing(Score_List).
 
 
 prepare(S):-
@@ -93,6 +93,12 @@ check_if_string(W,W1):-
 (string(W)->W1 is W,!;number_string(W,W2),atom_string(W2,W1)).
 
 
+%%%Remove - and weight from keyword
+remove_weight(W,W1):-
+(sub_string(case_insensitive,'-',W)->weight(W,Weight),number_string(Weight,S),remove_char(W,S,Temp),remove_char(Temp,"-",W1);!),!.
+
+
+remove_char(S,C,X) :- atom_concat(L,R,S), atom_concat(C,W,R), atom_concat(L,W,X).
 
 weight(W,Weight):-
     (is_phrase(W)->atom_chars(W,M),(sub_string(case_insensitive,'-',M)->reverse(M,[H|_]),atom_number(H,Num),Weight is Num;Weight is 1);
@@ -119,9 +125,12 @@ is_phrase(S):-
 
 
 length_phrase(W,L):-
+(sub_string(case_insensitive,'-',W)->atom_chars(W,K),
+tokenize_atom(K,O),
+length(O,L1),L is L1-1;
     atom_chars(W,K),
     tokenize_atom(K,O),
-    length(O,L).
+    length(O,L)).
 
 
 %%%Create list for score.
@@ -131,29 +140,47 @@ list_member(X,[_|T]):-
 list_append(A,T,T):-list_member(A,T),!.
 list_append(A,T,[A|T]).
 
+score_by_one_word(H2,H,Score):-
+weight(H2,Weight),(sub_string(case_insensitive,'-',H2)->remove_weight(H2,L),(sub_string(case_insensitive,L,H)->Score is Weight);(sub_string(case_insensitive,H2,H)->Score is Weight)).
+
 %%%--------------------------------------------------------------------------------------------------
-
-
 %%% H kai T einai to X
 %%% H1 kai T1 einai to Y
 %%% H2 kai T2 einai LoK
-check([H|T],[H1,T1],[H2,T2]):-
-    score_by_title(H,H2,Sc),
-    score_by_topics(H1,H2,L),
-    list_append(Sc,L,List),printing(List),
-    check(T,T1,T2).
+%%% Score_List einai i teliki lista me ta score
+check([H|T],[H1,T1],[H2,T2],Score_List):-
+score_by_title(H,H2,Sc),
+score_by_topics(H1,H2,L),
+list_append(Sc,L,Score_List),
+check(T,T1,T2,Score_List).
+
+score_by_phrase(H2,H,Score):-
+weight(H2,Weight),length_phrase(H2,L),(sub_string(case_insensitive,'-',H2)->remove_weight(H2,L),tokenize_atom(L,List),check_list(List,H,S),Score is S*(Weight/L)
+;tokenize_atom(H2,List),check_list(List,H,S),Score is S*(Weight/L)).
 
 
-score_by_title(H,H2,Sc):-
-    weight(H2,Weight),length_phrase(H2,L),
-(is_phrase(H2)->tokenize_atom(H2,TempList),check_sub_sting_phrase(TempList,H,Weight,L,Sc);
-    weight(H2,Weight),Sc is Weight).
+%%% H einai to X.
+%%% H2 einai to ListOfKeywords.
+score_by_title(H,H2,Sc).
 
 
 
+check_list([],_,_,_).
+check_list([Head|Tail],X,F,FS):-
+    (sub_string(case_insensitive,Head,X)->
+    incr(F,S),
+    F_S = S,
+    check_list(Tail,X,S,F_S);
+    check_list(Tail,X,F,F_S)).
 
 
-check_sub_sting_phrase([],_,_,_,_).
-check_sub_sting_phrase([Head|Tail],H,W,L,S):-
-(sub_string(case_insensitive,Head,H)->S is W/L;
-check_sub_sting_phrase(Tail,H,W,L,S)).
+
+%%%add_tail(+List,+Element,-List).
+add_tail([],X,[X]).
+add_tail([H|T],X,[H|L]):-add_tail(T,X,L).
+
+incr(F,S):-
+    S is F+1.
+
+
+
