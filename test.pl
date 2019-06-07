@@ -81,14 +81,17 @@ session('RuleML-2010 Challenge',
 
 
 query(ListOfKeywords):-
-    prepare(L),session(_,Y),
+    prepare(L),prepare1(Y),
     check(L,Y,ListOfKeywords,Score_List),printing(Score_List).
 
 
 prepare(S):-
     setof(X,session(X,_),S).
 
+prepare1(X):-
+    setof(Y,session(_,Y),X).
 
+%%% warning
 check_if_string(W,W1):-
 (string(W)->W1 is W,!;number_string(W,W2),atom_string(W2,W1)).
 
@@ -148,39 +151,37 @@ weight(H2,Weight),(sub_string(case_insensitive,'-',H2)->remove_weight(H2,L),(sub
 %%% H1 kai T1 einai to Y
 %%% H2 kai T2 einai LoK
 %%% Score_List einai i teliki lista me ta score
+check([],[],[],_).
 check([H|T],[H1,T1],[H2,T2],Score_List):-
-score_by_title(H,H2,Sc),
-score_by_topics(H1,H2,L),
-list_append(Sc,L,Score_List),
-check(T,T1,T2,Score_List).
+    score_by_title(H,H2,Sc),
+    %%%score_by_topics(H1,H2,[],L),
+    Sc1 is 2*Sc,write(Sc1),
+%%%list_append(Sc1,L,Score_List),write("List is: "),write(Score_List),nl,
+    check(T,T1,T2,Score_List).
 
 score_by_phrase(H2,H,Score):-
-weight(H2,Weight),length_phrase(H2,L),(sub_string(case_insensitive,'-',H2)->remove_weight(H2,L),tokenize_atom(L,List),check_list(List,H,S),Score is S*(Weight/L)
-;tokenize_atom(H2,List),check_list(List,H,S),Score is S*(Weight/L)).
+weight(H2,Weight),length_phrase(H2,L),(sub_string(case_insensitive,'-',H2)->remove_weight(H2,Z),tokenize_atom(Z,List),count(H,List,S),Score is S*(Weight/L)
+;tokenize_atom(H2,List),count(H,List,S),Score is S*(Weight/L)).
 
 
 %%% H einai to X.
 %%% H2 einai to ListOfKeywords.
-score_by_title(H,H2,Sc).
+score_by_title(H,H2,Sc):-
+    score_by_phrase(H2,H,Sc).
+
+score_by_topics([H1|T1],Word,L):-
+    score_by_phrase(Word,H1,Sc),write(Sc),
+    score_by_topics(T1,Word,L).
 
 
-
-check_list([],_,_,_).
-check_list([Head|Tail],X,F,FS):-
-    (sub_string(case_insensitive,Head,X)->
-    incr(F,S),
-    F_S = S,
-    check_list(Tail,X,S,F_S);
-    check_list(Tail,X,F,F_S)).
-
-
-
-%%%add_tail(+List,+Element,-List).
+%%%add_tail(+List,+Element,-List)
 add_tail([],X,[X]).
 add_tail([H|T],X,[H|L]):-add_tail(T,X,L).
 
-incr(F,S):-
-    S is F+1.
 
-
-
+count(_,[],0):-!.
+count(X,[H|T],N):-
+    !,(sub_string(case_insensitive,H,X)->count(X,T,N1),
+N is N1+1;count(X,T,N)).
+count(X,[_|T],N):-
+    count(X,T,N).
