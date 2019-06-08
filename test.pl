@@ -180,7 +180,8 @@ weight(H2,Weight),length_phrase(H2,L),(sub_string(case_insensitive,'-',H2)->remo
 %%% H einai to X.
 %%% H2 einai to ListOfKeywords.
 score_by_title(H,H2,Sc):-
-    score_by_phrase(H2,H,Sc).
+    score_by_phrase(H2,H,Sc1),
+    Sc is 2*Sc1.
 
 score_by_topics([],_,_,_):-!.
 score_by_topics([H1|T1],Word,L,Final):-
@@ -199,5 +200,5 @@ sum_list(List,Sum),max_list(List,Max),score(Sum,Max,Final)).
 score(Sum,Max,Final):-
     Final is (1000*Max)+Sum.
 
-test(S):-
-    session('Rules and Norms',Y),score_by_topics(Y,'rules and',[],S1),S=S1.
+test(S,Score):-
+    session(X,Y),score_by_title(X,'rules and norms',Sc),score_by_topics(Y,'rules and norms',[],S1),Score=Sc,S=S1.
