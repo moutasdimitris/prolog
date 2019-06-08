@@ -146,6 +146,19 @@ list_append(A,T,[A|T]).
 score_by_one_word(H2,H,Score):-
 weight(H2,Weight),(sub_string(case_insensitive,'-',H2)->remove_weight(H2,L),(sub_string(case_insensitive,L,H)->Score is Weight);(sub_string(case_insensitive,H2,H)->Score is Weight)).
 
+
+count(_,[],0):-!.
+count(X,[H|T],N):-
+!,(sub_string(case_insensitive,H,X)->count(X,T,N1),
+N is N1+1;count(X,T,N)).
+count(X,[_|T],N):-
+count(X,T,N).
+
+%%%add_tail(+List,+Element,-List)
+add_tail([],X,[X]).
+add_tail([H|T],X,[H|L]):-add_tail(T,X,L).
+
+
 %%%--------------------------------------------------------------------------------------------------
 %%% H kai T einai to X
 %%% H1 kai T1 einai to Y
@@ -154,10 +167,10 @@ weight(H2,Weight),(sub_string(case_insensitive,'-',H2)->remove_weight(H2,L),(sub
 check([],[],[],_).
 check([H|T],[H1,T1],[H2,T2],Score_List):-
     score_by_title(H,H2,Sc),
-    %%%score_by_topics(H1,H2,[],L),
+    %%%score_by_topics(H1,H2,[],L,_Title_score),
     Sc1 is 2*Sc,write(Sc1),
-%%%list_append(Sc1,L,Score_List),write("List is: "),write(Score_List),nl,
     check(T,T1,T2,Score_List).
+
 
 score_by_phrase(H2,H,Score):-
 weight(H2,Weight),length_phrase(H2,L),(sub_string(case_insensitive,'-',H2)->remove_weight(H2,Z),tokenize_atom(Z,List),count(H,List,S),Score is S*(Weight/L)
@@ -169,19 +182,22 @@ weight(H2,Weight),length_phrase(H2,L),(sub_string(case_insensitive,'-',H2)->remo
 score_by_title(H,H2,Sc):-
     score_by_phrase(H2,H,Sc).
 
-score_by_topics([H1|T1],Word,L):-
-    score_by_phrase(Word,H1,Sc),write(Sc),
-    score_by_topics(T1,Word,L).
+score_by_topics([],_,_,_):-!.
+score_by_topics([H1|T1],Word,L,Final):-
+    %%%write(H1),
+    score_by_phrase(Word,H1,Sc),
+%%%write("Score is "),write(Sc),nl,
+    add_tail(L,Sc,List),
+(not(length(T1,0))->score_by_topics(T1,Word,List,Final);
+sum_list(List,Sum),max_list(List,Max),score(Sum,Max,Final)).
+%%%write(Final),nl.
 
 
-%%%add_tail(+List,+Element,-List)
-add_tail([],X,[X]).
-add_tail([H|T],X,[H|L]):-add_tail(T,X,L).
 
 
-count(_,[],0):-!.
-count(X,[H|T],N):-
-    !,(sub_string(case_insensitive,H,X)->count(X,T,N1),
-N is N1+1;count(X,T,N)).
-count(X,[_|T],N):-
-    count(X,T,N).
+
+score(Sum,Max,Final):-
+    Final is (1000*Max)+Sum.
+
+test(S):-
+    session('Rules and Norms',Y),score_by_topics(Y,'rules and',[],S1),S=S1.
