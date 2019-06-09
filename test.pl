@@ -80,16 +80,13 @@ session('RuleML-2010 Challenge',
 'Reports on industrial experience about rule systems']).
 
 
-query(ListOfKeywords):-
-    prepare(L),prepare1(Y),
-    check(L,Y,ListOfKeywords,Score_List),printing(Score_List).
 
 
 prepare(S):-
-    setof(X,session(X,_),S).
+setof(X,session(X,_),S).
 
 prepare1(X):-
-    setof(Y,session(_,Y),X).
+setof(Y,session(_,Y),X).
 
 %%% warning
 check_if_string(W,W1):-
@@ -99,31 +96,25 @@ check_if_string(W,W1):-
 %%%Remove - and weight from keyword
 remove_weight(W,W1):-
 (sub_string(case_insensitive,'-',W)->weight(W,Weight),number_string(Weight,S),remove_char(W,S,Temp),remove_char(Temp,"-",W1);!),!.
-
-
 remove_char(S,C,X) :- atom_concat(L,R,S), atom_concat(C,W,R), atom_concat(L,W,X).
 
+
 weight(W,Weight):-
-    (is_phrase(W)->atom_chars(W,M),(sub_string(case_insensitive,'-',M)->reverse(M,[H|_]),atom_number(H,Num),Weight is Num;Weight is 1);
-    atom_chars(W,L),
-    (sub_string(case_insensitive,'-',L)->
-    reverse(L,[H1|_]),atom_number(H1,Num1),Weight is Num1,!;Weight is 1)).
+(is_phrase(W)->atom_chars(W,M),(sub_string(case_insensitive,'-',M)->reverse(M,[H|_]),atom_number(H,Num),Weight is Num;Weight is 1);
+atom_chars(W,L),
+(sub_string(case_insensitive,'-',L)->
+reverse(L,[H1|_]),atom_number(H1,Num1),Weight is Num1,!;Weight is 1)).
 
 
 calculate_score(List,FinalScore):-
-    max_list(List,Max),
-    sum_list(List,Sum),
-    FinalScore is (1000*Max)+Sum,printing(FinalScore).
+max_list(List,Max),
+sum_list(List,Sum),
+FinalScore is (1000*Max)+Sum.
 
-
-printing(Score):-
-    session(X,_),
-    write("Session:"),tab(1),write(X),nl,
-    write("Relevance = "),write(Score).
 
 
 is_phrase(S):-
-    sub_string(case_insensitive,' ',S).
+sub_string(case_insensitive,' ',S).
 
 
 
@@ -131,21 +122,17 @@ length_phrase(W,L):-
 (sub_string(case_insensitive,'-',W)->atom_chars(W,K),
 tokenize_atom(K,O),
 length(O,L1),L is L1-1;
-    atom_chars(W,K),
-    tokenize_atom(K,O),
-    length(O,L)).
+atom_chars(W,K),
+tokenize_atom(K,O),
+length(O,L)).
 
 
 %%%Create list for score.
 list_member(X,[X|_]).
 list_member(X,[_|T]):-
-    list_member(X,T).
+list_member(X,T).
 list_append(A,T,T):-list_member(A,T),!.
 list_append(A,T,[A|T]).
-
-score_by_one_word(H2,H,Score):-
-weight(H2,Weight),(sub_string(case_insensitive,'-',H2)->remove_weight(H2,L),(sub_string(case_insensitive,L,H)->Score is Weight);(sub_string(case_insensitive,H2,H)->Score is Weight)).
-
 
 count(_,[],0):-!.
 count(X,[H|T],N):-
@@ -158,47 +145,48 @@ count(X,T,N).
 add_tail([],X,[X]).
 add_tail([H|T],X,[H|L]):-add_tail(T,X,L).
 
+score(Sum,Max,Final):-
+Final is (1000*Max)+Sum.
 
-%%%--------------------------------------------------------------------------------------------------
-%%% H kai T einai to X
-%%% H1 kai T1 einai to Y
-%%% H2 kai T2 einai LoK
-%%% Score_List einai i teliki lista me ta score
-check([],[],[],_).
-check([H|T],[H1,T1],[H2,T2],Score_List):-
-    score_by_title(H,H2,Sc),
-    %%%score_by_topics(H1,H2,[],L,_Title_score),
-    Sc1 is 2*Sc,write(Sc1),
-    check(T,T1,T2,Score_List).
-
-
-score_by_phrase(H2,H,Score):-
-weight(H2,Weight),length_phrase(H2,L),(sub_string(case_insensitive,'-',H2)->remove_weight(H2,Z),tokenize_atom(Z,List),count(H,List,S),Score is S*(Weight/L)
-;tokenize_atom(H2,List),count(H,List,S),Score is S*(Weight/L)).
+%%% pleon tsekarei kai tis idies tis leksis protu tis xorisi stin periptosi tis frasis
+check_score(H2,H,Score):-
+weight(H2,Weight),length_phrase(H2,L),(sub_string(case_insensitive,'-',H2)->remove_weight(H2,Z),(is_phrase(Z)->sub_string(case_insensitive,Z,H)->Temp_Score is Weight,tokenize_atom(Z,List),count(H,List,S),Score1 is S*(Weight/L)+Temp_Score,Score is Score1;sub_string(case_insensitive,Z,H),Score is Weight)
+;(is_phrase(H2)->sub_string(case_insensitive,H2,H)->Temp_Score is Weight,tokenize_atom(H2,List),count(H,List,S),Score1 is S*(Weight/L)+Temp_Score,Score is Score1;sub_string(case_insensitive,H2,H)->Score is Weight)).
 
 
 %%% H einai to X.
 %%% H2 einai to ListOfKeywords.
-score_by_title(H,H2,Sc):-
-    score_by_phrase(H2,H,Sc1),
-    Sc is 2*Sc1.
-
-score_by_topics([],_,_,_):-!.
-score_by_topics([H1|T1],Word,L,Final):-
-    %%%write(H1),
-    score_by_phrase(Word,H1,Sc),
-%%%write("Score is "),write(Sc),nl,
-    add_tail(L,Sc,List),
-(not(length(T1,0))->score_by_topics(T1,Word,List,Final);
-sum_list(List,Sum),max_list(List,Max),score(Sum,Max,Final)).
-%%%write(Final),nl.
+score_by_title(_,[],_,_):-!.
+score_by_title(H,[Head|Tail],L,Sc):-
+check_score(Head,H,Sc1),
+Sc2 is 2*Sc1,
+Sc4 is L+Sc2,
+(not(length(Tail,0))->score_by_title(H,Tail,Sc4,Sc);Sc is Sc4).
 
 
+score_by_topics(_,[],_,_):-!.
+score_by_topics(H1,[Head|Tail],L,Final):-
+check_score(Head,H1,Sc),
+add_tail(L,Sc,List),
+(not(length(Tail,0))->score_by_topics(H1,Tail,List,Final);
+Final=List).
+
+checking([],[],_,_):-!.
+checking([H|T],[H1|T1],ListOfKeywords,L,Score_list):-
+    score_by_title(H,ListOfKeywords,0,Score_title),
+    score_by_topics(H1,ListOfKeywords,[],Score_topics),
+    list_append(Score_title,Score_topics,Score_List),calculate_score(Score_List,Score),
+add_tail(L,Score,List),
+((not(length(T1,0)),not(length(T,0)))->checking(T,T1,ListOfKeywords,List,Score_list);Score_list=List).
+
+printing1(P):-
+write(P).
+
+query(ListOfKeywords):-
+X=['General Introduction to Rules'],
+Y=['Rules and ontologies',
+'Execution models; rule engines; and environments',
+'Graphical processing; modeling and rendering of rules'],
+checking(X,Y,ListOfKeywords,[],Score),printing1(Score).
 
 
-
-score(Sum,Max,Final):-
-    Final is (1000*Max)+Sum.
-
-test(S,Score):-
-    session(X,Y),score_by_title(X,'rules and norms',Sc),score_by_topics(Y,'rules and norms',[],S1),Score=Sc,S=S1.
