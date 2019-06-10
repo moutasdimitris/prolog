@@ -158,7 +158,7 @@ weight(H2,Weight),length_phrase(H2,L),(sub_string(case_insensitive,'-',H2)->remo
 %%% H2 einai to ListOfKeywords.
 score_by_title(_,[],_,_):-!.
 score_by_title(H,[Head|Tail],L,Sc):-
-check_score(H,Head,Sc1),
+check_score(Head,H,Sc1),
 Sc2 is 2*Sc1,
 Sc4 is L+Sc2,
 (not(length(Tail,0))->score_by_title(H,Tail,Sc4,Sc);Sc is Sc4).
@@ -166,7 +166,7 @@ Sc4 is L+Sc2,
 
 score_by_topics(_,[],_,_):-!.
 score_by_topics(H1,[Head|Tail],L,Final):-
-check_score(H1,Head,Sc),
+check_score(Head,H1,Sc),
 add_tail(L,Sc,List),
 (not(length(Tail,0))->score_by_topics(H1,Tail,List,Final);
 Final=List).
