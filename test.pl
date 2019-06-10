@@ -149,7 +149,7 @@ score(Sum,Max,Final):-
 Final is (1000*Max)+Sum.
 
 %%% pleon tsekarei kai tis idies tis leksis protu tis xorisi stin periptosi tis frasis
-check_score(H2,H,Score):-
+check_score(H,H2,Score):-
 weight(H2,Weight),length_phrase(H2,L),(sub_string(case_insensitive,'-',H2)->remove_weight(H2,Z),(is_phrase(Z)->sub_string(case_insensitive,Z,H)->Temp_Score is Weight,tokenize_atom(Z,List),count(H,List,S),Score1 is S*(Weight/L)+Temp_Score,Score is Score1;sub_string(case_insensitive,Z,H),Score is Weight)
 ;(is_phrase(H2)->sub_string(case_insensitive,H2,H)->Temp_Score is Weight,tokenize_atom(H2,List),count(H,List,S),Score1 is S*(Weight/L)+Temp_Score,Score is Score1;sub_string(case_insensitive,H2,H)->Score is Weight)).
 
