@@ -80,22 +80,13 @@ session('RuleML-2010 Challenge',
 'Reports on industrial experience about rule systems']).
 
 
-
-
-prepare(S):-
-setof(X,session(X,_),S).
-
-prepare1(X):-
-setof(Y,session(_,Y),X).
-
-%%% warning
-check_if_string(W,W1):-
-(string(W)->W1 is W,!;number_string(W,W2),atom_string(W2,W1)).
-
+printing(X,P):-
+write('Session: '),write(X),nl,write('   Relevance = '),write(P).
 
 %%%Remove - and weight from keyword
 remove_weight(W,W1):-
-(sub_string(case_insensitive,'-',W)->weight(W,Weight),number_string(Weight,S),remove_char(W,S,Temp),remove_char(Temp,"-",W1);!),!.
+(sub_string(case_insensitive,'-',W)->weight(W,Weight),number_string(Weight,S),remove_char(W,S,Temp),remove_char(Temp,"-",W1);W1=W),!.
+
 remove_char(S,C,X) :- atom_concat(L,R,S), atom_concat(C,W,R), atom_concat(L,W,X).
 
 
@@ -148,10 +139,12 @@ add_tail([H|T],X,[H|L]):-add_tail(T,X,L).
 score(Sum,Max,Final):-
 Final is (1000*Max)+Sum.
 
-%%% pleon tsekarei kai tis idies tis leksis protu tis xorisi stin periptosi tis frasis
-check_score(H,H2,Score):-
-weight(H2,Weight),length_phrase(H2,L),(sub_string(case_insensitive,'-',H2)->remove_weight(H2,Z),(is_phrase(Z)->sub_string(case_insensitive,Z,H)->Temp_Score is Weight,tokenize_atom(Z,List),count(H,List,S),Score1 is S*(Weight/L)+Temp_Score,Score is Score1;sub_string(case_insensitive,Z,H),Score is Weight)
-;(is_phrase(H2)->sub_string(case_insensitive,H2,H)->Temp_Score is Weight,tokenize_atom(H2,List),count(H,List,S),Score1 is S*(Weight/L)+Temp_Score,Score is Score1;sub_string(case_insensitive,H2,H)->Score is Weight)).
+
+check_word(Keyword,Word,Weight,Score):-
+   sub_string(case_insensitive,Keyword,Word)->Score is Weight;Score is 0.
+
+check_score(Keyword,Word,Score):-
+weight(Keyword,Weight),remove_weight(Keyword,Z),length_phrase(Keyword,L),(L>1->(sub_string(case_insensitive,Z,Word)->Temp_Score is Weight;Temp_Score is 0),tokenize_atom(Z,List),count(Word,List,S),Score1 is S*(Weight/L)+Temp_Score,Score is Score1;count(Word,Z,S),Score1 is S*Weight,Score is Score1;check_word(Z,Word,Weight,Score1),Score is Score1).
 
 
 %%% H einai to X.
@@ -163,6 +156,13 @@ Sc2 is 2*Sc1,
 Sc4 is L+Sc2,
 (not(length(Tail,0))->score_by_title(H,Tail,Sc4,Sc);Sc is Sc4).
 
+check_topics([],_,_,_):-!.
+check_topics([YHead|YTail],ListOfKeywords,L,Score):-
+    score_by_topics(YHead,ListOfKeywords,[],Final1),
+    sum_list(Final1,Sum),
+    add_tail(L,Sum,Final),
+(not(length(YTail,0))->check_topics(YTail,ListOfKeywords,Final,Score);Score=Final).
+
 
 score_by_topics(_,[],_,_):-!.
 score_by_topics(H1,[Head|Tail],L,Final):-
@@ -171,19 +171,14 @@ add_tail(L,Sc,List),
 (not(length(Tail,0))->score_by_topics(H1,Tail,List,Final);
 Final=List).
 
-checking([],[],_,_):-!.
-checking([H|T],[H1|T1],ListOfKeywords,L,Score_list):-
-    score_by_title(H,ListOfKeywords,0,Score_title),write("title score is "),write(Score_title),nl,
-    score_by_topics(H1,ListOfKeywords,[],Score_topics),write("topics score is "),write(Score_topics),nl,
-    list_append(Score_title,Score_topics,Score_List),calculate_score(Score_List,Score),
-add_tail(L,Score,List),
-((not(length(T1,0)),not(length(T,0)))->checking(T,T1,ListOfKeywords,List,Score_list);Score_list=List).
-
-printing1(P):-
-write(P).
+checking([],_,_,_):-!.
+checking([H|T],Y,ListOfKeywords,Score):-
+    score_by_title(H,ListOfKeywords,0,Score_title),
+    check_topics(Y,ListOfKeywords,[],Score_topics),
+    list_append(Score_title,Score_topics,Score_List),
+    calculate_score(Score_List,Score),    checking(T,Y,ListOfKeywords,Score).
 
 query(ListOfKeywords):-
 session(X,Y),
-checking([X],Y,ListOfKeywords,[],Score),printing1(Score).
-
+checking([X],Y,ListOfKeywords,Score),printing(X,Score).
 
