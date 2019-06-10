@@ -158,7 +158,7 @@ weight(H2,Weight),length_phrase(H2,L),(sub_string(case_insensitive,'-',H2)->remo
 %%% H2 einai to ListOfKeywords.
 score_by_title(_,[],_,_):-!.
 score_by_title(H,[Head|Tail],L,Sc):-
-check_score(Head,H,Sc1),
+check_score(H,Head,Sc1),
 Sc2 is 2*Sc1,
 Sc4 is L+Sc2,
 (not(length(Tail,0))->score_by_title(H,Tail,Sc4,Sc);Sc is Sc4).
@@ -166,15 +166,15 @@ Sc4 is L+Sc2,
 
 score_by_topics(_,[],_,_):-!.
 score_by_topics(H1,[Head|Tail],L,Final):-
-check_score(Head,H1,Sc),
+check_score(H1,Head,Sc),
 add_tail(L,Sc,List),
 (not(length(Tail,0))->score_by_topics(H1,Tail,List,Final);
 Final=List).
 
 checking([],[],_,_):-!.
 checking([H|T],[H1|T1],ListOfKeywords,L,Score_list):-
-    score_by_title(H,ListOfKeywords,0,Score_title),
-    score_by_topics(H1,ListOfKeywords,[],Score_topics),
+    score_by_title(H,ListOfKeywords,0,Score_title),write("title score is "),write(Score_title),nl,
+    score_by_topics(H1,ListOfKeywords,[],Score_topics),write("topics score is "),write(Score_topics),nl,
     list_append(Score_title,Score_topics,Score_List),calculate_score(Score_List,Score),
 add_tail(L,Score,List),
 ((not(length(T1,0)),not(length(T,0)))->checking(T,T1,ListOfKeywords,List,Score_list);Score_list=List).
@@ -183,10 +183,7 @@ printing1(P):-
 write(P).
 
 query(ListOfKeywords):-
-X=['General Introduction to Rules'],
-Y=['Rules and ontologies',
-'Execution models; rule engines; and environments',
-'Graphical processing; modeling and rendering of rules'],
-checking(X,Y,ListOfKeywords,[],Score),printing1(Score).
+session(X,Y),
+checking([X],Y,ListOfKeywords,[],Score),printing1(Score).
 
 
