@@ -80,27 +80,26 @@ session('RuleML-2010 Challenge',
 'Reports on industrial experience about rule systems']).
 
 
-printing(X,P):-
-write('Session: '),write(X),nl,write('   Relevance = '),write(P).
+
 
 %%%Remove - and weight from keyword
 remove_weight(W,W1):-
-(sub_string(case_insensitive,'-',W)->weight(W,Weight),number_string(Weight,S),remove_char(W,S,Temp),remove_char(Temp,"-",W1);W1=W),!.
+ (sub_string(case_insensitive,'-',W)->weight(W,Weight),number_string(Weight,S),remove_char(W,S,Temp),remove_char(Temp,"-",W1);W1=W),!.
 
 remove_char(S,C,X) :- atom_concat(L,R,S), atom_concat(C,W,R), atom_concat(L,W,X).
 
 
 weight(W,Weight):-
-(is_phrase(W)->atom_chars(W,M),(sub_string(case_insensitive,'-',M)->reverse(M,[H|_]),atom_number(H,Num),Weight is Num;Weight is 1);
-atom_chars(W,L),
-(sub_string(case_insensitive,'-',L)->
-reverse(L,[H1|_]),atom_number(H1,Num1),Weight is Num1,!;Weight is 1)).
+    (is_phrase(W)->atom_chars(W,M),(sub_string(case_insensitive,'-',M)->reverse(M,[H|_]),atom_number(H,Num),Weight is Num;Weight is 1);
+    atom_chars(W,L),
+    (sub_string(case_insensitive,'-',L)->
+    reverse(L,[H1|_]),atom_number(H1,Num1),Weight is Num1,!;Weight is 1)).
 
 
 calculate_score(List,FinalScore):-
-max_list(List,Max),
-sum_list(List,Sum),
-FinalScore is (1000*Max)+Sum.
+    max_list(List,Max),
+    sum_list(List,Sum),
+    FinalScore is (1000*Max)+Sum.
 
 
 
@@ -110,27 +109,27 @@ sub_string(case_insensitive,' ',S).
 
 
 length_phrase(W,L):-
-(sub_string(case_insensitive,'-',W)->atom_chars(W,K),
-tokenize_atom(K,O),
-length(O,L1),L is L1-1;
-atom_chars(W,K),
-tokenize_atom(K,O),
-length(O,L)).
+    (sub_string(case_insensitive,'-',W)->atom_chars(W,K),
+    tokenize_atom(K,O),
+    length(O,L1),L is L1-1;
+    atom_chars(W,K),
+    tokenize_atom(K,O),
+    length(O,L)).
 
 
 %%%Create list for score.
 list_member(X,[X|_]).
 list_member(X,[_|T]):-
-list_member(X,T).
-list_append(A,T,T):-list_member(A,T),!.
-list_append(A,T,[A|T]).
+    list_member(X,T).
+    list_append(A,T,T):-list_member(A,T),!.
+    list_append(A,T,[A|T]).
 
-count(_,[],0):-!.
+count(_,[],0).
 count(X,[H|T],N):-
-!,(sub_string(case_insensitive,H,X)->count(X,T,N1),
-N is N1+1;count(X,T,N)).
-count(X,[_|T],N):-
-count(X,T,N).
+    !,(sub_string(case_insensitive,H,X)->count(X,T,N1),
+    N is N1+1;count(X,T,N)).
+    count(X,[_|T],N):-
+    count(X,T,N).
 
 %%%add_tail(+List,+Element,-List)
 add_tail([],X,[X]).
@@ -149,36 +148,69 @@ weight(Keyword,Weight),remove_weight(Keyword,Z),length_phrase(Keyword,L),(L>1->(
 
 %%% H einai to X.
 %%% H2 einai to ListOfKeywords.
-score_by_title(_,[],_,_):-!.
+score_by_title(_,[],_,_).
 score_by_title(H,[Head|Tail],L,Sc):-
-check_score(Head,H,Sc1),
-Sc2 is 2*Sc1,
-Sc4 is L+Sc2,
-(not(length(Tail,0))->score_by_title(H,Tail,Sc4,Sc);Sc is Sc4).
+    check_score(Head,H,Sc1),
+    Sc2 is 2*Sc1,
+    Sc4 is L+Sc2,
+    (not(length(Tail,0))->score_by_title(H,Tail,Sc4,Sc);Sc is Sc4).
 
-check_topics([],_,_,_):-!.
+check_topics([],_,_,_).
 check_topics([YHead|YTail],ListOfKeywords,L,Score):-
     score_by_topics(YHead,ListOfKeywords,[],Final1),
     sum_list(Final1,Sum),
     add_tail(L,Sum,Final),
-(not(length(YTail,0))->check_topics(YTail,ListOfKeywords,Final,Score);Score=Final).
+    (not(length(YTail,0))->check_topics(YTail,ListOfKeywords,Final,Score);Score=Final).
 
 
-score_by_topics(_,[],_,_):-!.
+score_by_topics(_,[],_,_).
 score_by_topics(H1,[Head|Tail],L,Final):-
-check_score(Head,H1,Sc),
-add_tail(L,Sc,List),
-(not(length(Tail,0))->score_by_topics(H1,Tail,List,Final);
-Final=List).
+    check_score(Head,H1,Sc),
+    add_tail(L,Sc,List),
+    (not(length(Tail,0))->score_by_topics(H1,Tail,List,Final);
+    Final=List).
 
-checking([],_,_,_):-!.
+
+checking([],_,_,_).
 checking([H|T],Y,ListOfKeywords,Score):-
     score_by_title(H,ListOfKeywords,0,Score_title),
     check_topics(Y,ListOfKeywords,[],Score_topics),
     list_append(Score_title,Score_topics,Score_List),
-    calculate_score(Score_List,Score),    checking(T,Y,ListOfKeywords,Score).
+    calculate_score(Score_List,Score),
+    checking(T,Y,ListOfKeywords,Score).
+
+
+test(ListOfKeywords,Score):-
+    session(X,Y),
+    checking([X],Y,ListOfKeywords,Score).
+
+test2(ListOfKeywords,List1):-
+    findall(Score,test(ListOfKeywords,Score),List1).
+
+remove([],_,_):-!.
+remove([G|H],0,H):-!.
+remove([G|H],N,[G|L]):- N >=1 ,Nn is N-1,!,away(H,Nn,L).
+
+%%% X einai Unsorted
+%%% Xlist einai o titlos tou kathe session
+find([],_,_):-!.
+find([H|T],X1,P):-
+    nth0(Z,X1,H),
+    nth0(Z,P,A),nl,
+    remove(X1,Z,L),
+    remove(P,Z,P1),
+    printing(A,H),
+    find(T,L,P1).
+
+fd(Sorted,Unsorted):-
+    findall(X,session(X,_),P),find(Sorted,Unsorted,P),!.
+
+printing(X,P):-
+write('Session: '),write(X),nl,write('Relevance = '),write(P),nl.
+
+sorting(List, Sorted):-
+sort(0,@>=,List,Sorted).
 
 query(ListOfKeywords):-
-session(X,Y),
-checking([X],Y,ListOfKeywords,Score),printing(X,Score).
+    test2(ListOfKeywords,List),sorting(List,S),fd(S,List).
 
