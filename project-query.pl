@@ -137,6 +137,7 @@ count(X,[H|T],N):-
 add_tail([],X,[X]).
 add_tail([H|T],X,[H|L]):-add_tail(T,X,L).
 
+%Gia diagrafi
 score(Sum,Max,Final):-
 Final is (1000*Max)+Sum.
 
@@ -194,6 +195,7 @@ test(ListOfKeywords,Score):-
 %??????
 test2(ListOfKeywords,List1):-
     findall(Score,test(ListOfKeywords,Score),List1).
+
 %??????
 remove([],_,_):-!.
 remove([G|H],0,H):-!.
