@@ -137,9 +137,6 @@ count(X,[H|T],N):-
 add_tail([],X,[X]).
 add_tail([H|T],X,[H|L]):-add_tail(T,X,L).
 
-%Gia diagrafi
-score(Sum,Max,Final):-
-Final is (1000*Max)+Sum.
 
 %If the element of ListOfKeywords is a word check her score.
 check_word(Keyword,Word,Weight,Score):-
