@@ -3,6 +3,7 @@
 %%%Κακαζιάνης Γιώργος ΑΕΜ:3014
 
 %%%Για να γίνει δεκτή η ListOfKeywords θα πρέπει να περικλείεται από ('').
+%%% πχ. query(['rules']) ή query(['rules','exceptions-2']).
 
 %%% session/2
 %%% session(Title,Topics).
